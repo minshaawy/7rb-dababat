@@ -96,10 +96,10 @@
     var buildUrl = "Build";
     var config = {
       arguments: [],
-      dataUrl: buildUrl + "/9f5c91f5b6d2913ce7e099bcfadfd6ae.data.unityweb",
-      frameworkUrl: buildUrl + "/4099c2af834f317f1ea654c433049426.framework.js.unityweb",
+      dataUrl: buildUrl + "/706b49b1f4b8b4bb6af8a15607031007.data.unityweb",
+      frameworkUrl: buildUrl + "/32a8887755f0932b73a6591f4d02639d.framework.js.unityweb",
       fullscreenElementID: "game-root",
-      codeUrl: buildUrl + "/a4e4a830d4c5d6c17b74e2b3358eeb0a.wasm.unityweb",
+      codeUrl: buildUrl + "/f18bdb22b3c4ed062d36d6edbc2f7a5a.wasm.unityweb",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "حرب الدبابات",
@@ -114,7 +114,7 @@
       fail("المتصفح ده مش بيدعم WebGL 2. جرّب آخر إصدار من كروم أو سفاري أو إيدج أو فايرفوكس. على الآيفون والآيباد لازم iOS 15 أو أحدث.");
     } else {
       var script = document.createElement("script");
-      script.src = buildUrl + "/ffe6cd89d13408b4e27cee33eeb65f60.loader.js";
+      script.src = buildUrl + "/8c59ca3bc14d54f6df2ddfacd31ed11b.loader.js";
       script.onload = function () {
         createUnityInstance(canvas, config, function (p) {
           bar.style.width = Math.round(p * 100) + "%";
