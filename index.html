@@ -1,150 +1,134 @@
 <!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | حرب الدبابات</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <div id="unity-fullscreen-container">
-        <canvas id="unity-canvas" width="960" height="600" tabindex="-1"></canvas>
-        <div id="unity-loading-container">
-          <div id="unity-loading-bar">
-            <div id="unity-logo"></div>
-            <div id="unity-progress-bar-empty">
-              <div id="unity-progress-bar-full"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-logo-title-footer"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">حرب الدبابات</div>
-      </div>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="حرب الدبابات">
+  <meta name="theme-color" content="#14160f">
+  <title>حرب الدبابات</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root { --ground: #14160f; --panel: #1d2016; --line: #3b412f; --sand: #e6c35c; --text: #ece8d8; --muted: #b3b09a; --alert: #eb5242; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--ground); color: var(--text);
+      font-family: "Segoe UI", Tahoma, "Geeza Pro", "Noto Sans Arabic", sans-serif; touch-action: none;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+    /* the game fills the whole window, whatever its shape */
+    #game-root { position: fixed; inset: 0; }
+    #unity-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: var(--ground); outline: none; }
+    .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px;
+      padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); box-sizing: border-box; }
+    #boot { background: repeating-linear-gradient(135deg, transparent 0 22px, rgba(230,195,92,0.035) 22px 44px), var(--ground); z-index: 5; transition: opacity .5s ease; }
+    #boot.done { opacity: 0; pointer-events: none; }
+    .card { width: min(460px, 100%); display: grid; gap: 16px; text-align: center; }
+    h1 { margin: 0; font-size: clamp(2.2rem, 9vw, 3.4rem); font-weight: 800; line-height: 1.15; }
+    .sub { margin: 0; color: var(--muted); }
+    .gauge { position: relative; height: 14px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); overflow: hidden; }
+    .gauge > span { position: absolute; inset: 0 auto 0 0; width: 0%; background: repeating-linear-gradient(90deg, var(--sand) 0 10px, #c9a845 10px 12px); transition: width .2s ease; }
+    #status { color: var(--muted); font-size: .95rem; }
+    #err { display: none; margin: 0; padding: 12px 14px; border: 1px solid var(--alert); border-radius: 4px; background: rgba(235,82,66,.12);
+      text-align: start; font-size: .9rem; line-height: 1.6; word-break: break-word; }
+    .tip { margin: 0; color: var(--muted); font-size: .85rem; line-height: 1.7; }
+    #iostip { display: none; }
+    /* phones held upright: ask to turn sideways (the battlefield needs the width) */
+    #rotate { display: none; z-index: 8; background: rgba(20,22,15,.96); flex-direction: column; gap: 18px; text-align: center; }
+    #rotate .phone { width: 46px; height: 78px; border: 4px solid var(--sand); border-radius: 9px; animation: turn 2.2s ease-in-out infinite; }
+    @keyframes turn { 0%, 30% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
+    #rotate button { font: inherit; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 8px 16px; }
+    @media (orientation: portrait) and (pointer: coarse) { #rotate.on { display: flex; } }
+    @media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; transform: rotate(-90deg); } .gauge > span, #boot { transition: none; } }
+  </style>
+</head>
+<body>
+  <div id="game-root"><canvas id="unity-canvas" tabindex="-1"></canvas></div>
+
+  <div id="boot" class="screen" role="status" aria-live="polite">
+    <div class="card">
+      <h1>حرب الدبابات</h1>
+      <p class="sub">معركة على الرمل مع الكمبيوتر أو مع أصحابك</p>
+      <div class="gauge" aria-hidden="true"><span id="bar"></span></div>
+      <div id="status">بنحمّل اللعبة…</div>
+      <p id="err"></p>
+      <p class="tip" id="iostip">على الآيفون: عشان تلعب بشاشة كاملة، دوس زرار المشاركة في سفاري واختار «إضافة إلى الشاشة الرئيسية»، وافتح اللعبة من الأيقونة.</p>
     </div>
-    <script>
-      let canvas = document.querySelector("#unity-canvas");
-      let fullscreenContainer = document.querySelector("#unity-fullscreen-container");
+  </div>
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
-      }
+  <div id="rotate" class="screen on">
+    <div class="phone" aria-hidden="true"></div>
+    <div>لف الموبايل بالعرض عشان تلعب</div>
+    <button type="button" id="rotate-skip">كمّل كده</button>
+  </div>
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/TankWar-GitHubPages.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/TankWar-GitHubPages.data.unityweb",
-        frameworkUrl: buildUrl + "/TankWar-GitHubPages.framework.js.unityweb",
-        codeUrl: buildUrl + "/TankWar-GitHubPages.wasm.unityweb",
-        streamingAssetsUrl: "StreamingAssets",
+  <script>
+    var canvas = document.getElementById("unity-canvas");
+    var bar = document.getElementById("bar");
+    var statusEl = document.getElementById("status");
+    var errEl = document.getElementById("err");
+    var started = false;
 
-        // If you have a custom web site structure, or want to place multiple Unity build instances on the same page,
-        // you can pass fullscreenElementID: "my-unity-fullscreen-container-id", in this configuration field to
-        // explicitly point to the element tree root that is displayed in fullscreen mode.
-        fullscreenElementID: "unity-fullscreen-container",
+    var ua = navigator.userAgent || "";
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var isMobile = isIOS || /Android|Mobile/i.test(ua);
+    var standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches;
+    if (isIOS && !standalone && !(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen))
+      document.getElementById("iostip").style.display = "block";
 
-        companyName: "DefaultCompany",
-        productName: "حرب الدبابات",
-        productVersion: "4.0.1",
-        showBanner: unityShowBanner,
-        // errorHandler: function(err, url, line) {
-        //    alert("error " + err + " occurred at line " + line);
-        //    // Return 'true' if you handled this error and don't want Unity
-        //    // to process it further, 'false' otherwise.
-        //    return true;
-        // },
-      };
+    document.getElementById("rotate-skip").addEventListener("click", function () { document.getElementById("rotate").classList.remove("on"); });
 
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
+    function fail(message) {
+      statusEl.textContent = "اللعبة ما اشتغلتش على الجهاز ده";
+      errEl.style.display = "block";
+      errEl.textContent = message;
+    }
 
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
+    // until the game is running, show any script error instead of a silent black screen
+    window.addEventListener("error", function (e) { if (!started) fail("خطأ: " + (e.message || e)); });
+    window.addEventListener("unhandledrejection", function (e) { if (!started) fail("خطأ: " + ((e.reason && e.reason.message) || e.reason)); });
 
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
+    function hasWebGL2() {
+      try { var c = document.createElement("canvas"); return !!c.getContext("webgl2"); } catch (e) { return false; }
+    }
 
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        document.querySelector("#unity-container").className = "unity-mobile";
-        canvas.className = "unity-mobile";
+    var buildUrl = "Build";
+    var config = {
+      arguments: [],
+      dataUrl: buildUrl + "/9f5c91f5b6d2913ce7e099bcfadfd6ae.data.unityweb",
+      frameworkUrl: buildUrl + "/4099c2af834f317f1ea654c433049426.framework.js.unityweb",
+      fullscreenElementID: "game-root",
+      codeUrl: buildUrl + "/a4e4a830d4c5d6c17b74e2b3358eeb0a.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "حرب الدبابات",
+      productVersion: "4.0.1",
+      matchWebGLToCanvasSize: true,
+      // phone screens pack 3x the pixels; rendering at up to 1.5x looks the same at arm's length and runs far cooler
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2),
+      showBanner: function (msg, type) { if (type === "error") fail(msg); else console.warn(msg); }
+    };
 
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
-      } else {
-        // Desktop style: Render the game canvas container in a window that can be maximized to fullscreen:
-        fullscreenContainer.style.width = "960px";
-        fullscreenContainer.style.height = "600px";
-      }
-
-
+    if (!hasWebGL2()) {
+      fail("المتصفح ده مش بيدعم WebGL 2. جرّب آخر إصدار من كروم أو سفاري أو إيدج أو فايرفوكس. على الآيفون والآيباد لازم iOS 15 أو أحدث.");
+    } else {
       var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        const loadingContainer = document.querySelector("#unity-loading-container");
-        const progressBarFull = document.querySelector("#unity-progress-bar-full");
-
-        createUnityInstance(canvas, config, (progress) => {
-          if (progress < 1) {
-            loadingContainer.style.display = "block";
-            progressBarFull.style.width = 100 * progress + "%";
-          } else {
-            loadingContainer.style.display = "none";
-          }
-        }).then((unityInstance) => {
-                document.querySelector("#unity-fullscreen-button").onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-
-              }).catch((message) => {
-                alert(message);
-              });
-            };
-
+      script.src = buildUrl + "/ffe6cd89d13408b4e27cee33eeb65f60.loader.js";
+      script.onload = function () {
+        createUnityInstance(canvas, config, function (p) {
+          bar.style.width = Math.round(p * 100) + "%";
+          statusEl.textContent = p < 0.9 ? "بنحمّل اللعبة… " + Math.round(p * 100) + "٪" : "بنجهّز المعركة…";
+        }).then(function () {
+          started = true;
+          bar.style.width = "100%";
+          document.getElementById("boot").classList.add("done");
+          canvas.focus();
+        }).catch(function (e) { fail("حصلت مشكلة وإحنا بنشغّل اللعبة: " + ((e && e.message) || e)); });
+      };
+      script.onerror = function () { fail("تعذّر تحميل ملف التشغيل. اتأكد إن كل الملفات اترفعت (فولدر Build)."); };
       document.body.appendChild(script);
-
-    </script>
-  </body>
+    }
+  </script>
+</body>
 </html>
