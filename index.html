@@ -123,10 +123,10 @@
     var buildUrl = "Build";
     var config = {
       arguments: [],
-      dataUrl: buildUrl + "/32ee3a2eff24b88bb226d5712352875f.data.unityweb",
-      frameworkUrl: buildUrl + "/e4671ab523d9b889cd53dad9aeae653c.framework.js.unityweb",
+      dataUrl: buildUrl + "/63211638c4c32621630c01a2fc9ec166.data.unityweb",
+      frameworkUrl: buildUrl + "/c784fb5f1762db2c71826b791425ab89.framework.js.unityweb",
       fullscreenElementID: "game-root",
-      codeUrl: buildUrl + "/1456268ea149ad143b90fe8896237044.wasm.unityweb",
+      codeUrl: buildUrl + "/60daedc43f4cdc1b3877f5b32125a3f7.wasm.unityweb",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "حرب الدبابات",
@@ -137,11 +137,15 @@
       showBanner: function (msg, type) { if (type === "error") fail(msg); else console.warn(msg); }
     };
 
-    if (!hasWebGL2()) {
+    // opened by double-clicking index.html: browsers won't let a page load the game's files that way
+    if (location.protocol === "file:") {
+      fail(T("الصفحة دي اتفتحت كملف مباشرةً، والمتصفح مش بيسمح للعبة تشتغل كده. اقفل الصفحة وافتح ملف play-on-this-pc.bat اللي في نفس الفولدر (دبل كليك)، وهو هيفتحلك اللعبة. أو العبها من رابط الموقع.",
+        "This page was opened straight from the folder, and browsers don't let the game run that way. Close it and double-click play-on-this-pc.bat in the same folder; it opens the game for you. Or play from the website link."));
+    } else if (!hasWebGL2()) {
       fail(T("المتصفح ده مش بيدعم WebGL 2. جرّب آخر إصدار من كروم أو سفاري أو إيدج أو فايرفوكس. على الآيفون والآيباد لازم iOS 15 أو أحدث.", "This browser does not support WebGL 2. Try the latest Chrome, Safari, Edge or Firefox. iPhone and iPad need iOS 15 or later."));
     } else {
       var script = document.createElement("script");
-      script.src = buildUrl + "/a5c54c7afac7b6d7d78721672f1a990b.loader.js";
+      script.src = buildUrl + "/f29c7d0793e22bd39db64ddbf1fc6535.loader.js";
       script.onload = function () {
         createUnityInstance(canvas, config, function (p) {
           bar.style.width = Math.round(p * 100) + "%";
