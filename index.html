@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" translate="no" class="notranslate">
 <head>
   <meta charset="utf-8">
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,7 +26,7 @@
     #boot { background: repeating-linear-gradient(135deg, transparent 0 22px, rgba(230,195,92,0.035) 22px 44px), var(--ground); z-index: 5; transition: opacity .5s ease; }
     #boot.done { opacity: 0; pointer-events: none; }
     .card { width: min(460px, 100%); display: grid; gap: 16px; text-align: center; }
-    h1 { margin: 0; font-size: clamp(2.2rem, 9vw, 3.4rem); font-weight: 800; line-height: 1.15; }
+    .logo { width: min(420px, 92%); height: auto; margin: 0 auto; display: block; }
     .sub { margin: 0; color: var(--muted); }
     .gauge { position: relative; height: 14px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); overflow: hidden; }
     .gauge > span { position: absolute; inset: 0 auto 0 0; width: 0%; background: repeating-linear-gradient(90deg, var(--sand) 0 10px, #c9a845 10px 12px); transition: width .2s ease; }
@@ -48,8 +49,8 @@
 
   <div id="boot" class="screen" role="status" aria-live="polite">
     <div class="card">
-      <h1>حرب الدبابات</h1>
-      <p class="sub">معركة على الرمل مع الكمبيوتر أو مع أصحابك</p>
+      <img class="logo" src="logo.png" alt="حرب الدبابات - Tank War">
+      <p class="sub" id="sub">معركة على الرمل مع الكمبيوتر أو مع أصحابك</p>
       <div class="gauge" aria-hidden="true"><span id="bar"></span></div>
       <div id="status">بنحمّل اللعبة…</div>
       <p id="err"></p>
@@ -59,11 +60,25 @@
 
   <div id="rotate" class="screen on">
     <div class="phone" aria-hidden="true"></div>
-    <div>لف الموبايل بالعرض عشان تلعب</div>
+    <div id="rotate-text">لف الموبايل بالعرض عشان تلعب</div>
     <button type="button" id="rotate-skip">كمّل كده</button>
   </div>
 
   <script>
+    // Arabic or English: the language picked in the game last time, otherwise the browser's own
+    var EN = (function () {
+      try { var s = localStorage.getItem("tw.lang"); if (s) return s === "en"; } catch (e) { }
+      return !/^ar/i.test(navigator.language || "");
+    })();
+    function T(ar, en) { return EN ? en : ar; }
+    if (EN) {
+      document.documentElement.lang = "en"; document.documentElement.dir = "ltr";
+      document.getElementById("sub").textContent = "Battle on the sand against the computer or your friends";
+      document.getElementById("status").textContent = "Loading the game…";
+      document.getElementById("iostip").textContent = "On iPhone: to play full screen, tap Share in Safari, choose “Add to Home Screen” and open the game from its icon.";
+      document.getElementById("rotate-text").textContent = "Turn your phone sideways to play";
+      document.getElementById("rotate-skip").textContent = "Continue anyway";
+    }
     var canvas = document.getElementById("unity-canvas");
     var bar = document.getElementById("bar");
     var statusEl = document.getElementById("status");
@@ -80,14 +95,26 @@
     document.getElementById("rotate-skip").addEventListener("click", function () { document.getElementById("rotate").classList.remove("on"); });
 
     function fail(message) {
-      statusEl.textContent = "اللعبة ما اشتغلتش على الجهاز ده";
+      statusEl.textContent = T("اللعبة ما اشتغلتش على الجهاز ده", "The game could not start on this device");
       errEl.style.display = "block";
       errEl.textContent = message;
     }
 
     // until the game is running, show any script error instead of a silent black screen
-    window.addEventListener("error", function (e) { if (!started) fail("خطأ: " + (e.message || e)); });
-    window.addEventListener("unhandledrejection", function (e) { if (!started) fail("خطأ: " + ((e.reason && e.reason.message) || e.reason)); });
+    // Errors from outside the game (a browser extension, the page translator) arrive as a bare
+    // "Script error." or from another site's file. Unity's loader would abort the start-up on them,
+    // so they are stopped here, before the loader's own listener sees them.
+    function foreign(e) {
+      var f = e.filename || "";
+      if (!f) return /^script error\.?$/i.test((e.message || "").trim());
+      return f.indexOf(location.origin) !== 0 && f.indexOf("blob:" + location.origin) !== 0;
+    }
+    window.addEventListener("error", function (e) {
+      if (e.target && e.target !== window) return; // a missing image or file, handled where it loads
+      if (foreign(e)) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+      if (!started) fail(T("خطأ: ", "Error: ") + (e.message || e));
+    }, true);
+    window.addEventListener("unhandledrejection", function (e) { if (!started) fail(T("خطأ: ", "Error: ") + ((e.reason && e.reason.message) || e.reason)); });
 
     function hasWebGL2() {
       try { var c = document.createElement("canvas"); return !!c.getContext("webgl2"); } catch (e) { return false; }
@@ -96,10 +123,10 @@
     var buildUrl = "Build";
     var config = {
       arguments: [],
-      dataUrl: buildUrl + "/c378dd2145c059083527da70c715726a.data.unityweb",
-      frameworkUrl: buildUrl + "/32a8887755f0932b73a6591f4d02639d.framework.js.unityweb",
+      dataUrl: buildUrl + "/32ee3a2eff24b88bb226d5712352875f.data.unityweb",
+      frameworkUrl: buildUrl + "/e4671ab523d9b889cd53dad9aeae653c.framework.js.unityweb",
       fullscreenElementID: "game-root",
-      codeUrl: buildUrl + "/74d90d4fe5711e76c7aaf1b07f7b7663.wasm.unityweb",
+      codeUrl: buildUrl + "/1456268ea149ad143b90fe8896237044.wasm.unityweb",
       streamingAssetsUrl: "StreamingAssets",
       companyName: "DefaultCompany",
       productName: "حرب الدبابات",
@@ -111,22 +138,22 @@
     };
 
     if (!hasWebGL2()) {
-      fail("المتصفح ده مش بيدعم WebGL 2. جرّب آخر إصدار من كروم أو سفاري أو إيدج أو فايرفوكس. على الآيفون والآيباد لازم iOS 15 أو أحدث.");
+      fail(T("المتصفح ده مش بيدعم WebGL 2. جرّب آخر إصدار من كروم أو سفاري أو إيدج أو فايرفوكس. على الآيفون والآيباد لازم iOS 15 أو أحدث.", "This browser does not support WebGL 2. Try the latest Chrome, Safari, Edge or Firefox. iPhone and iPad need iOS 15 or later."));
     } else {
       var script = document.createElement("script");
-      script.src = buildUrl + "/e2a7b6766d0ed477ee682c777e062c78.loader.js";
+      script.src = buildUrl + "/a5c54c7afac7b6d7d78721672f1a990b.loader.js";
       script.onload = function () {
         createUnityInstance(canvas, config, function (p) {
           bar.style.width = Math.round(p * 100) + "%";
-          statusEl.textContent = p < 0.9 ? "بنحمّل اللعبة… " + Math.round(p * 100) + "٪" : "بنجهّز المعركة…";
+          statusEl.textContent = p < 0.9 ? T("بنحمّل اللعبة… ", "Loading the game… ") + Math.round(p * 100) + T("٪", "%") : T("بنجهّز المعركة…", "Preparing the battle…");
         }).then(function () {
           started = true;
           bar.style.width = "100%";
           document.getElementById("boot").classList.add("done");
           canvas.focus();
-        }).catch(function (e) { fail("حصلت مشكلة وإحنا بنشغّل اللعبة: " + ((e && e.message) || e)); });
+        }).catch(function (e) { fail(T("حصلت مشكلة وإحنا بنشغّل اللعبة: ", "Something went wrong starting the game: ") + ((e && e.message) || e)); });
       };
-      script.onerror = function () { fail("تعذّر تحميل ملف التشغيل. اتأكد إن كل الملفات اترفعت (فولدر Build)."); };
+      script.onerror = function () { fail(T("تعذّر تحميل ملف التشغيل. اتأكد إن كل الملفات اترفعت (فولدر Build).", "Could not load the game file. Make sure every file was uploaded (the Build folder).")); };
       document.body.appendChild(script);
     }
   </script>
